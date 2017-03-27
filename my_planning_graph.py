@@ -411,7 +411,16 @@ class PlanningGraph():
         :return: bool
         '''
         # TODO test for Inconsistent Effects between nodes
-        return False
+        a1_add = node_a1.action.effect_add
+        a1_rem = node_a1.action.effect_rem
+        a2_add = node_a2.action.effect_add
+        a2_rem = node_a2.action.effect_rem
+
+        if (len(set(a1_add).intersection(a2_rem)) > 0 or
+            len(set(a1_rem).intersection(a2_add)) > 0):
+            return True
+        else:
+            return False
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         '''
@@ -428,7 +437,23 @@ class PlanningGraph():
         :return: bool
         '''
         # TODO test for Interference between nodes
-        return False
+        a1_add = node_a1.action.effect_add
+        a1_rem = node_a1.action.effect_rem
+        a2_add = node_a2.action.effect_add
+        a2_rem = node_a2.action.effect_rem
+
+        a1_pos = node_a1.action.precond_pos
+        a1_neg = node_a1.action.precond_neg
+        a2_pos = node_a2.action.precond_pos
+        a2_neg = node_a2.action.precond_neg
+
+        if (len(set(a1_add).intersection(a2_neg)) > 0 or 
+            len(set(a1_rem).intersection(a2_pos)) > 0 or 
+            len(set(a2_add).intersection(a1_neg)) > 0 or 
+            len(set(a2_rem).intersection(a1_pos)) > 0):
+            return True
+        else:
+            return False
 
     def competing_needs_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         '''
@@ -442,7 +467,12 @@ class PlanningGraph():
         '''
 
         # TODO test for Competing Needs between nodes
-        return False
+        for p1 in node_a1.parents:
+            for p2 in node_a2.parents:
+                if p1.is_mutex(p2):
+                    return True
+        else:
+            return False
 
     def update_s_mutex(self, nodeset: set):
         ''' Determine and update sibling mutual exclusion for S-level nodes
@@ -477,7 +507,11 @@ class PlanningGraph():
         :return: bool
         '''
         # TODO test for negation between nodes
-        return False
+        if node_s1.literal == expr('~{}'.format(node_s2.literal)) \
+            or node_s2.literal == expr('~{}'.format(node_s1.literal)):
+            return True
+        else:
+            return False
 
     def inconsistent_support_mutex(self, node_s1: PgNode_s, node_s2: PgNode_s):
         '''
@@ -496,7 +530,41 @@ class PlanningGraph():
         :return: bool
         '''
         # TODO test for Inconsistent Support between nodes
-        return False
+        pos_symbols = []
+        neg_symbols = []
+        if node_s1.is_pos:
+            pos_symbols.append(expr(node_s1.symbol))
+        else:
+            neg_symbols.append(expr(node_s1.symbol))
+        if node_s2.is_pos:
+            pos_symbols.append(expr(node_s2.symbol))
+        else:
+            neg_symbols.append(expr(node_s2.symbol))
+
+        for p1 in node_s1.parents: 
+            p1_adds = p1.action.effect_add
+            p1_rems = p1.action.effect_rem
+            if ((len(pos_symbols) == 0 or all(x in p1_adds for x in pos_symbols)) and
+                (len(neg_symbols) == 0 or all(x in p1_rems for x in neg_symbols))):
+                return False
+            for p2 in node_s2.parents:
+                p2_adds = p2.action.effect_add
+                p2_rems = p2.action.effect_rem
+                if ((len(pos_symbols) == 0 or all(x in p2_adds for x in pos_symbols)) and
+                    (len(neg_symbols) == 0 or all(x in p2_rems for x in neg_symbols))):
+                    return False
+                else:
+                    if p1.is_mutex(p2):
+                        print("p: ", pos_symbols)
+                        print("n: ", neg_symbols)
+                        print("p1 adds: ", p1_adds)
+                        print("p1 rems: ", p1_rems)
+                        print("p2 adds: ", p2_adds)
+                        print("p2 rems: ", p2_rems)
+
+                        return True
+        else:
+            return False
 
     def h_levelsum(self) -> int:
         '''The sum of the level costs of the individual goals (admissible if goals independent)
