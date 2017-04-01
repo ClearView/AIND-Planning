@@ -554,17 +554,17 @@ class PlanningGraph():
                     (len(neg_symbols) == 0 or all(x in p2_rems for x in neg_symbols))):
                     return False
                 else:
+                    #print("p: ", pos_symbols)
+                    #print("n: ", neg_symbols)
+                    #print("p1 adds: ", p1_adds)
+                    #print("p1 rems: ", p1_rems)
+                    #print("p2 adds: ", p2_adds)
+                    #print("p2 rems: ", p2_rems)
                     if p1.is_mutex(p2):
-                        print("p: ", pos_symbols)
-                        print("n: ", neg_symbols)
-                        print("p1 adds: ", p1_adds)
-                        print("p1 rems: ", p1_rems)
-                        print("p2 adds: ", p2_adds)
-                        print("p2 rems: ", p2_rems)
-
+                        #print("True")
                         return True
-        else:
-            return False
+                    else: 
+                        return False
 
     def h_levelsum(self) -> int:
         '''The sum of the level costs of the individual goals (admissible if goals independent)
@@ -574,4 +574,15 @@ class PlanningGraph():
         level_sum = 0
         # TODO implement
         # for each goal in the problem, determine the level cost, then add them together
+        for goal in self.problem.goal:
+            #print(goal)
+            i = 0
+            goal_found = False
+            while i < len(self.s_levels) and not goal_found:
+                for node in self.s_levels[i]:
+                    if goal == node.literal:
+                        level_sum += i
+                        goal_found = True
+                i += 1
+
         return level_sum
